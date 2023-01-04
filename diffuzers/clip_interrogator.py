@@ -119,10 +119,10 @@ class Interrogator:
             "unsplash",
             "zbrush central",
         ]
-        trending_list = [site for site in sites]
-        trending_list.extend(["trending on " + site for site in sites])
-        trending_list.extend(["featured on " + site for site in sites])
-        trending_list.extend([site + " contest winner" for site in sites])
+        trending_list = list(sites)
+        trending_list.extend([f"trending on {site}" for site in sites])
+        trending_list.extend([f"featured on {site}" for site in sites])
+        trending_list.extend([f"{site} contest winner" for site in sites])
 
         raw_artists = _load_list(config.data_path, "artists.txt")
         artists = [f"by {a}" for a in raw_artists]
@@ -201,7 +201,7 @@ class Interrogator:
         image_features = self.image_to_features(image)
         merged = _merge_tables([self.artists, self.flavors, self.mediums, self.movements, self.trendings], self.config)
         tops = merged.rank(image_features, max_flavors)
-        return _truncate_to_fit(caption + ", " + ", ".join(tops), self.tokenize)
+        return _truncate_to_fit(f"{caption}, " + ", ".join(tops), self.tokenize)
 
     def interrogate(self, image: Image, max_flavors: int = 32) -> str:
         caption = self.generate_caption(image)
@@ -218,7 +218,7 @@ class Interrogator:
 
         def check(addition: str) -> bool:
             nonlocal best_prompt, best_sim
-            prompt = best_prompt + ", " + addition
+            prompt = f"{best_prompt}, {addition}"
             sim = self.similarity(image_features, prompt)
             if sim > best_sim:
                 best_sim = sim
@@ -233,7 +233,7 @@ class Interrogator:
                 prompt = best_prompt
                 for bit in range(len(opts)):
                     if i & (1 << bit):
-                        prompt += ", " + opts[bit]
+                        prompt += f", {opts[bit]}"
                 prompts.append(prompt)
 
             t = LabelTable(prompts, None, self.clip_model, self.tokenize, self.config)
@@ -255,7 +255,7 @@ class Interrogator:
         return best_prompt
 
     def rank_top(self, image_features: torch.Tensor, text_array: List[str]) -> str:
-        text_tokens = self.tokenize([text for text in text_array]).to(self.device)
+        text_tokens = self.tokenize(list(text_array)).to(self.device)
         with torch.no_grad(), torch.cuda.amp.autocast():
             text_features = self.clip_model.encode_text(text_tokens)
             text_features /= text_features.norm(dim=-1, keepdim=True)
@@ -306,9 +306,7 @@ class LabelTable:
                     text_features = clip_model.encode_text(text_tokens)
                     text_features /= text_features.norm(dim=-1, keepdim=True)
                     text_features = text_features.half().cpu().numpy()
-                for i in range(text_features.shape[0]):
-                    self.embeds.append(text_features[i])
-
+                self.embeds.extend(text_features[i] for i in range(text_features.shape[0]))
             if cache_filepath is not None:
                 with open(cache_filepath, "wb") as f:
                     pickle.dump(
@@ -316,7 +314,7 @@ class LabelTable:
                         f,
                     )
 
-        if self.device == "cpu" or self.device == torch.device("cpu"):
+        if self.device in ["cpu", torch.device("cpu")]:
             self.embeds = [e.astype(np.float32) for e in self.embeds]
 
     def _rank(self, image_features: torch.Tensor, text_embeds: torch.Tensor, top_count: int = 1) -> str:
@@ -372,5 +370,5 @@ def _truncate_to_fit(text: str, tokenize) -> str:
     for part in parts[1:]:
         if _prompt_at_max_len(new_text + part, tokenize):
             break
-        new_text += ", " + part
+        new_text += f", {part}"
     return new_text

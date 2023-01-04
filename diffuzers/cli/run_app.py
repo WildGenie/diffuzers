@@ -75,11 +75,10 @@ class RunDiffuzersAppCommand(BaseDiffuzersCommand):
         if self.device is None:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        if self.share:
-            if self.ngrok_key is None:
-                raise ValueError(
-                    "ngrok key is required if you want to share the app. Get it for free from https://dashboard.ngrok.com/get-started/your-authtoken"
-                )
+        if self.share and self.ngrok_key is None:
+            raise ValueError(
+                "ngrok key is required if you want to share the app. Get it for free from https://dashboard.ngrok.com/get-started/your-authtoken"
+            )
 
     def run(self):
         # from ..app import Diffuzers
