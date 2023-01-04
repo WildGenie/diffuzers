@@ -43,12 +43,11 @@ class ImageInterrogator:
         pipeline.config.flavor_intermediate_count = 2048 if model == "ViT-L-14/openai" else 1024
 
         if mode == "best":
-            prompt = pipeline.interrogate(image)
+            return pipeline.interrogate(image)
         elif mode == "classic":
-            prompt = pipeline.interrogate_classic(image)
+            return pipeline.interrogate_classic(image)
         else:
-            prompt = pipeline.interrogate_fast(image)
-        return prompt
+            return pipeline.interrogate_fast(image)
 
     def app(self):
         # upload image

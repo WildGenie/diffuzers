@@ -57,7 +57,7 @@ class GFPGAN:
             act_type="prelu",
         )
         model_path = os.path.join(utils.cache_folder(), self.model_paths["realesr-general-x4v3.pth"])
-        half = True if torch.cuda.is_available() else False
+        half = bool(torch.cuda.is_available())
         self.upsampler = RealESRGANer(
             scale=4,
             model_path=model_path,
@@ -71,16 +71,14 @@ class GFPGAN:
     def inference(self, img, version, scale):
         # taken from: https://huggingface.co/spaces/Xintao/GFPGAN/blob/main/app.py
         # weight /= 100
-        if scale > 4:
-            scale = 4  # avoid too large scale value
-
+        scale = min(scale, 4)
         file_bytes = np.asarray(bytearray(img.read()), dtype=np.uint8)
         img = cv2.imdecode(file_bytes, 1)
         # img = cv2.imread(img, cv2.IMREAD_UNCHANGED)
         if len(img.shape) == 2:  # for gray inputs
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-        h, w = img.shape[0:2]
+        h, w = img.shape[:2]
         if h < 300:
             img = cv2.resize(img, (w * 2, h * 2), interpolation=cv2.INTER_LANCZOS4)
 
@@ -128,7 +126,7 @@ class GFPGAN:
         try:
             if scale != 2:
                 interpolation = cv2.INTER_AREA if scale < 2 else cv2.INTER_LANCZOS4
-                h, w = img.shape[0:2]
+                h, w = img.shape[:2]
                 output = cv2.resize(output, (int(w * scale / 2), int(h * scale / 2)), interpolation=interpolation)
         except Exception as error:
             logger.error("wrong scale input.", error)
@@ -144,15 +142,14 @@ class GFPGAN:
             version = st.selectbox("GFPGAN version", ["v1.2", "v1.3", "v1.4", "RestoreFormer"])
             scale = st.slider("Scale", 2, 4, 4, 1)
             submit = st.form_submit_button("Upscale")
-        if submit:
-            if input_image is not None:
-                with st.spinner("Upscaling image..."):
-                    output_img = self.inference(input_image, version, scale)
-                    st.image(output_img, width=512)
-                    # add image download button
-                    output_img = Image.fromarray(output_img)
-                    buffered = BytesIO()
-                    output_img.save(buffered, format="PNG")
-                    img_str = base64.b64encode(buffered.getvalue()).decode()
-                    href = f'<a href="data:file/png;base64,{img_str}" download="gfpgan.png">Download Image</a>'
-                    st.markdown(href, unsafe_allow_html=True)
+        if submit and input_image is not None:
+            with st.spinner("Upscaling image..."):
+                output_img = self.inference(input_image, version, scale)
+                st.image(output_img, width=512)
+                # add image download button
+                output_img = Image.fromarray(output_img)
+                buffered = BytesIO()
+                output_img.save(buffered, format="PNG")
+                img_str = base64.b64encode(buffered.getvalue()).decode()
+                href = f'<a href="data:file/png;base64,{img_str}" download="gfpgan.png">Download Image</a>'
+                st.markdown(href, unsafe_allow_html=True)

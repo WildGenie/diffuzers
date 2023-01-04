@@ -56,7 +56,7 @@ class Diffuzers:
             steps = gr.Slider(1, 150, 50, label="Steps")
             seed = gr.Slider(minimum=1, step=1, maximum=999999, randomize=True, label="Seed")
             generate_button = gr.Button("Generate")
-        params_dict = {
+        return {
             "prompt": prompt,
             "negative_prompt": negative_prompt,
             "scheduler": scheduler,
@@ -68,7 +68,6 @@ class Diffuzers:
             "project_name": project_name,
             "generate_button": generate_button,
         }
-        return params_dict
 
     def _text2img_output(self):
         with gr.Column():
@@ -76,11 +75,10 @@ class Diffuzers:
             text2img_output.style(grid=[4], container=False)
         with gr.Column():
             text2img_output_params = gr.Markdown()
-        params_dict = {
+        return {
             "output": text2img_output,
             "markdown": text2img_output_params,
         }
-        return params_dict
 
     def _text2img_generate(
         self, prompt, negative_prompt, scheduler, image_size, guidance_scale, num_images, steps, seed, project_name
@@ -130,7 +128,7 @@ class Diffuzers:
             negative_prompt = gr.Textbox(label="Negative prompt (optional)", lines=3, max_lines=3)
             seed = gr.Slider(minimum=1, step=1, maximum=999999, randomize=True, label="Seed")
             generate_button = gr.Button("Generate")
-        params_dict = {
+        return {
             "input_image": input_image,
             "prompt": prompt,
             "negative_prompt": negative_prompt,
@@ -144,7 +142,6 @@ class Diffuzers:
             "project_name": project_name,
             "generate_button": generate_button,
         }
-        return params_dict
 
     def _img2img_output(self):
         with gr.Column():
@@ -152,11 +149,10 @@ class Diffuzers:
             img2img_output.style(grid=[4], container=False)
         with gr.Column():
             img2img_output_params = gr.Markdown()
-        params_dict = {
+        return {
             "output": img2img_output,
             "markdown": img2img_output_params,
         }
-        return params_dict
 
     def _img2img_generate(
         self,
